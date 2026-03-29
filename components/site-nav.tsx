@@ -17,7 +17,9 @@ export function SiteNav() {
   const pathname = usePathname();
   const { profile, signOut, user } = useAuth();
   const visibleNavItems =
-    profile?.role === "mentor"
+    !user
+      ? [{ href: "/", label: "Home" }, { href: "/login", label: "Login" }]
+      : profile?.role === "mentor"
       ? [
           { href: "/", label: "Home" },
           { href: "/mentor", label: "Mentor Dashboard" },

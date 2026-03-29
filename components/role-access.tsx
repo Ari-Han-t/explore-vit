@@ -19,10 +19,28 @@ export function RoleAccess({
   ctaLabel: string;
   children: React.ReactNode;
 }) {
-  const { isLoading, profile } = useAuth();
+  const { isLoading, profile, user } = useAuth();
 
   if (isLoading) {
     return <div className="glass-panel rounded-[1.8rem] p-6">Loading workspace...</div>;
+  }
+
+  if (!user || !profile) {
+    return (
+      <div className="glass-panel rounded-[1.8rem] p-6 sm:p-8">
+        <p className="text-sm font-semibold uppercase tracking-[0.16em] text-muted">Sign In Required</p>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight">Please log in to continue</h1>
+        <p className="mt-3 max-w-2xl text-sm leading-7 text-muted">
+          This workspace is only available to signed-in users with the right account access.
+        </p>
+        <Link
+          href="/login"
+          className="mt-5 inline-flex rounded-full bg-accent px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#9d4e23]"
+        >
+          Go to Login
+        </Link>
+      </div>
+    );
   }
 
   if (profile && !allow.includes(profile.role)) {

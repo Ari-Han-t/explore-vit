@@ -31,7 +31,7 @@ const featureCards = [
 ];
 
 export default function Home() {
-  const { isLoading, isSupabaseEnabled, profile } = useAuth();
+  const { isLoading, isSupabaseEnabled, profile, user } = useAuth();
   const [mentorProfiles, setMentorProfiles] = useState<AppProfile[]>([]);
 
   useEffect(() => {
@@ -46,6 +46,54 @@ export default function Home() {
 
   if (isLoading) {
     return <div className="glass-panel rounded-[1.8rem] p-6">Loading workspace...</div>;
+  }
+
+  if (!user || !profile) {
+    return (
+      <div className="space-y-8">
+        <section className="glass-panel overflow-hidden rounded-[2rem]">
+          <div className="grid gap-8 px-6 py-8 sm:px-8 lg:grid-cols-[1.2fr_0.8fr] lg:px-10">
+            <div className="space-y-6">
+              <div className="inline-flex rounded-full border border-border bg-white/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-accent">
+                Explore VIT
+              </div>
+              <div className="space-y-4">
+                <h1 className="max-w-3xl text-4xl font-semibold tracking-tight sm:text-5xl">
+                  Explore domains, connect with mentors, and make better decisions about your path.
+                </h1>
+                <p className="max-w-2xl text-base leading-7 text-muted sm:text-lg">
+                  Sign in to open your student or mentor workspace. Your activity, chats, and reflections stay private to your account.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <Link
+                  href="/login"
+                  className="rounded-full bg-accent px-5 py-3 text-sm font-semibold text-white transition hover:translate-y-[-1px] hover:bg-[#9d4e23]"
+                >
+                  Login
+                </Link>
+              </div>
+            </div>
+
+            <div className="rounded-[1.5rem] border border-border bg-[linear-gradient(180deg,#fff7ef_0%,#f4dcc8_100%)] p-5 shadow-sm">
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-muted">
+                Access
+              </p>
+              <div className="mt-4 space-y-4">
+                <div className="rounded-2xl bg-white/80 p-4">
+                  <p className="text-sm text-muted">Students</p>
+                  <p className="mt-1 text-lg font-semibold">VIT Google sign-in only</p>
+                </div>
+                <div className="rounded-2xl bg-white/80 p-4">
+                  <p className="text-sm text-muted">Mentors</p>
+                  <p className="mt-1 text-lg font-semibold">Approved mentor email access</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    );
   }
 
   if (profile?.role === "mentor") {

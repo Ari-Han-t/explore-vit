@@ -26,7 +26,7 @@ function getLocalStorageSnapshot(key: string) {
 }
 
 export default function ProfilePage() {
-  const { profile, refreshProfile, user } = useAuth();
+  const { isLoading, profile, refreshProfile, user } = useAuth();
   const reflectionsSnapshot = useSyncExternalStore(
     subscribeToStorage,
     () => getLocalStorageSnapshot("explore-vit:reflections"),
@@ -60,6 +60,28 @@ export default function ProfilePage() {
   });
   const [studentFormUserId, setStudentFormUserId] = useState<string | null>(null);
   const [studentFormMessage, setStudentFormMessage] = useState("");
+
+  if (isLoading) {
+    return <div className="glass-panel rounded-[1.8rem] p-6">Loading workspace...</div>;
+  }
+
+  if (!user || !profile) {
+    return (
+      <div className="glass-panel rounded-[1.8rem] p-6 sm:p-8">
+        <p className="text-sm font-semibold uppercase tracking-[0.16em] text-muted">Sign In Required</p>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight">Please log in to view your profile</h1>
+        <p className="mt-3 max-w-2xl text-sm leading-7 text-muted">
+          Your profile, mentor note, and activity summary are only available inside your signed-in workspace.
+        </p>
+        <Link
+          href="/login"
+          className="mt-5 inline-flex rounded-full bg-accent px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#9d4e23]"
+        >
+          Go to Login
+        </Link>
+      </div>
+    );
+  }
 
   if (profile && profile.role !== "mentor" && studentFormUserId !== profile.id) {
     queueMicrotask(() => {

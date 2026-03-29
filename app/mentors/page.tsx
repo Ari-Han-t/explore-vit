@@ -8,7 +8,7 @@ import type { AppProfile, MentorSessionRecord } from "@/lib/types";
 
 export default function MentorsPage() {
   const router = useRouter();
-  const { isSupabaseEnabled, profile, user } = useAuth();
+  const { isLoading, isSupabaseEnabled, profile, user } = useAuth();
   const [mentorProfiles, setMentorProfiles] = useState<AppProfile[]>([]);
   const [selectedMentorId, setSelectedMentorId] = useState("");
   const [selectedSlot, setSelectedSlot] = useState("");
@@ -52,6 +52,29 @@ export default function MentorsPage() {
   }, [mentorProfiles]);
 
   const selectedMentor = displayMentors.find((mentor) => mentor.id === selectedMentorId) ?? displayMentors[0];
+
+  if (isLoading) {
+    return <div className="glass-panel rounded-[1.8rem] p-6">Loading workspace...</div>;
+  }
+
+  if (!user || !profile) {
+    return (
+      <section className="glass-panel rounded-[1.8rem] p-6 sm:p-8">
+        <p className="text-sm font-semibold uppercase tracking-[0.16em] text-muted">Sign In Required</p>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight">Please log in to view mentors</h1>
+        <p className="mt-3 max-w-2xl text-sm leading-7 text-muted">
+          Mentor discovery, session booking, and chat are only available to signed-in students.
+        </p>
+        <button
+          type="button"
+          onClick={() => router.push("/login")}
+          className="mt-5 rounded-full bg-accent px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#9d4e23]"
+        >
+          Go to Login
+        </button>
+      </section>
+    );
+  }
 
   const handleBook = () => {
     if (!selectedMentor || !selectedSlot) {
