@@ -3,8 +3,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
-import { createOrGetMentorSession, fetchMentorProfiles, fetchUserSessions } from "@/lib/supabase-data";
-import type { AppProfile, MentorSessionRecord } from "@/lib/types";
+import { mentorSlots } from "@/lib/data";
+import {
+  bookMentorSlot,
+  createOrGetMentorSession,
+  fetchMentorBookingsByMentorIds,
+  fetchMentorBookingsForStudent,
+  fetchMentorProfiles,
+  fetchUserSessions,
+} from "@/lib/supabase-data";
+import type { AppProfile, MentorBookingRecord, MentorSessionRecord } from "@/lib/types";
 
 export default function MentorsPage() {
   const router = useRouter();
@@ -15,6 +23,8 @@ export default function MentorsPage() {
   const [confirmation, setConfirmation] = useState("");
   const [status, setStatus] = useState("Browse mentors and start a conversation when you are ready.");
   const [sessions, setSessions] = useState<MentorSessionRecord[]>([]);
+  const [bookings, setBookings] = useState<MentorBookingRecord[]>([]);
+  const [isBooking, setIsBooking] = useState(false);
 
   useEffect(() => {
     if (!isSupabaseEnabled) {
@@ -22,9 +32,17 @@ export default function MentorsPage() {
     }
 
     void fetchMentorProfiles()
-      .then((data) => {
+      .then(async (data) => {
         setMentorProfiles(data);
         setSelectedMentorId(data[0]?.id ?? "");
+        const bookingRows = await fetchMentorBookingsByMentorIds(data.map((mentor) => mentor.id));
+        setBookings(
+          bookingRows.map((booking) => ({
+            ...booking,
+            student_profile: null,
+            mentor_profile: null,
+          }))
+        );
         setStatus(data.length ? "Choose a mentor and start a conversation." : "No mentors are available right now.");
       })
       .catch((error: { message?: string }) => setStatus(error.message ?? "We could not load mentors right now."));
@@ -37,6 +55,13 @@ export default function MentorsPage() {
 
     void fetchUserSessions(user.id, "student")
       .then(setSessions)
+      .catch(() => undefined);
+
+    void fetchMentorBookingsForStudent(user.id)
+      .then((data) => setBookings((current) => {
+        const otherBookings = current.filter((booking) => booking.student_id !== user.id);
+        return [...otherBookings, ...data];
+      }))
       .catch(() => undefined);
   }, [isSupabaseEnabled, profile?.role, user]);
 
@@ -52,6 +77,7 @@ export default function MentorsPage() {
   }, [mentorProfiles]);
 
   const selectedMentor = displayMentors.find((mentor) => mentor.id === selectedMentorId) ?? displayMentors[0];
+  const selectedMentorBookings = bookings.filter((booking) => booking.mentor_id === selectedMentor?.id);
 
   if (isLoading) {
     return <div className="glass-panel rounded-[1.8rem] p-6">Loading workspace...</div>;
@@ -77,14 +103,48 @@ export default function MentorsPage() {
   }
 
   const handleBook = () => {
-    if (!selectedMentor || !selectedSlot) {
-      setConfirmation("Pick a slot before booking.");
+    if (!user || profile?.role !== "student" || !selectedMentor || !selectedSlot || !isSupabaseEnabled) {
+      setConfirmation("Please sign in as a student to book a session.");
       return;
     }
 
-    setConfirmation(
-      `Session booked with ${selectedMentor.full_name || selectedMentor.email} for ${selectedSlot}.`
-    );
+    setIsBooking(true);
+    void bookMentorSlot(user.id, selectedMentor.id, selectedSlot)
+      .then((booking) => {
+        setBookings((current) => {
+          const withoutConflicts = current.filter(
+            (item) => !(item.mentor_id === booking.mentor_id && item.slot_label === booking.slot_label)
+          );
+          return [booking, ...withoutConflicts];
+        });
+        setConfirmation(
+          `Session booked with ${selectedMentor.full_name || selectedMentor.email} for ${selectedSlot}.`
+        );
+      })
+      .catch((error) => {
+        const message = error instanceof Error ? error.message : "Could not book that session.";
+        setConfirmation(message);
+      })
+      .finally(() => setIsBooking(false));
+  };
+
+  const getSlotState = (slot: string) => {
+    const booking = selectedMentorBookings.find((item) => item.slot_label === slot && item.status === "booked");
+
+    if (!booking) {
+      return { isBooked: false, isOwn: false };
+    }
+
+    return {
+      isBooked: true,
+      isOwn: booking.student_id === user?.id,
+    };
+  };
+
+  const handleLegacyBookGuard = () => {
+    if (!selectedMentor || !selectedSlot) {
+      setConfirmation("Pick a slot before booking.");
+    }
   };
 
   const handleStartChat = async () => {
@@ -217,33 +277,52 @@ export default function MentorsPage() {
             <div className="mt-6">
               <p className="text-sm font-semibold text-accent">Available slots</p>
               <div className="mt-3 grid gap-3">
-                {[
-                  "Mon, 6:00 PM",
-                  "Thu, 7:30 PM",
-                  "Sat, 11:30 AM",
-                ].map((slot) => (
-                  <button
-                    key={slot}
-                    type="button"
-                    onClick={() => setSelectedSlot(slot)}
-                    className={`rounded-2xl border px-4 py-3 text-left text-sm transition ${
-                      selectedSlot === slot
-                        ? "border-accent bg-[#fff0e6] text-[#7a3717]"
-                        : "border-border bg-white/75 text-muted hover:bg-white"
-                    }`}
-                  >
-                    {slot}
-                  </button>
-                ))}
+                {mentorSlots.map((slot) => {
+                  const slotState = getSlotState(slot);
+
+                  return (
+                    <button
+                      key={slot}
+                      type="button"
+                      disabled={slotState.isBooked && !slotState.isOwn}
+                      onClick={() => setSelectedSlot(slot)}
+                      className={`rounded-2xl border px-4 py-3 text-left text-sm transition ${
+                        slotState.isBooked && !slotState.isOwn
+                          ? "cursor-not-allowed border-border bg-[#f2ece6] text-muted line-through opacity-70"
+                          : selectedSlot === slot
+                            ? "border-accent bg-[#fff0e6] text-[#7a3717]"
+                            : slotState.isOwn
+                              ? "border-accent/40 bg-[#fff7ef] text-[#7a3717]"
+                              : "border-border bg-white/75 text-muted hover:bg-white"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <span>{slot}</span>
+                        {slotState.isBooked ? (
+                          <span className="text-xs font-semibold uppercase tracking-[0.12em]">
+                            {slotState.isOwn ? "Your booking" : "Booked"}
+                          </span>
+                        ) : null}
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
             <button
               type="button"
-              onClick={handleBook}
+              onClick={() => {
+                if (!selectedSlot) {
+                  handleLegacyBookGuard();
+                  return;
+                }
+
+                void handleBook();
+              }}
               className="mt-6 rounded-full bg-accent px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#9d4e23]"
             >
-              Book Session
+              {isBooking ? "Booking..." : "Book Session"}
             </button>
             <button
               type="button"
@@ -286,6 +365,24 @@ export default function MentorsPage() {
                       Chat with {session.mentor_profile?.full_name || session.mentor_profile?.email || "mentor"}
                     </button>
                   ))}
+                </div>
+              </div>
+            ) : null}
+
+            {profile?.role === "student" && bookings.filter((booking) => booking.student_id === user?.id).length ? (
+              <div className="mt-6 rounded-[1.5rem] border border-border bg-white/75 p-4">
+                <p className="text-sm font-semibold text-accent">Your booked sessions</p>
+                <div className="mt-3 space-y-3">
+                  {bookings
+                    .filter((booking) => booking.student_id === user?.id)
+                    .map((booking) => (
+                      <div
+                        key={booking.id}
+                        className="rounded-2xl border border-border bg-white px-4 py-3 text-sm text-muted"
+                      >
+                        {booking.mentor_profile?.full_name || booking.mentor_profile?.email || "Mentor"} - {booking.slot_label}
+                      </div>
+                    ))}
                 </div>
               </div>
             ) : null}

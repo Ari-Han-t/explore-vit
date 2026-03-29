@@ -6,6 +6,7 @@ import type {
   AppRole,
   ChatMessageRecord,
   DomainName,
+  MentorBookingRecord,
   MentorSessionRecord,
   ReflectionEntry,
   StudentContextSummary,
@@ -21,11 +22,35 @@ type SessionJoinRow = {
   mentor_profile?: Array<Pick<AppProfile, "id" | "full_name" | "email" | "bio" | "tags">>;
 };
 
+type BookingJoinRow = {
+  id: string;
+  mentor_id: string;
+  student_id: string;
+  slot_label: string;
+  status: string;
+  created_at: string;
+  student_profile?: Array<Pick<AppProfile, "id" | "full_name" | "email" | "domain_interest" | "bio">>;
+  mentor_profile?: Array<Pick<AppProfile, "id" | "full_name" | "email" | "bio" | "tags">>;
+};
+
 function normalizeSessionRow(row: SessionJoinRow): MentorSessionRecord {
   return {
     id: row.id,
     student_id: row.student_id,
     mentor_id: row.mentor_id,
+    status: row.status,
+    created_at: row.created_at,
+    student_profile: row.student_profile?.[0] ?? null,
+    mentor_profile: row.mentor_profile?.[0] ?? null,
+  };
+}
+
+function normalizeBookingRow(row: BookingJoinRow): MentorBookingRecord {
+  return {
+    id: row.id,
+    mentor_id: row.mentor_id,
+    student_id: row.student_id,
+    slot_label: row.slot_label,
     status: row.status,
     created_at: row.created_at,
     student_profile: row.student_profile?.[0] ?? null,
@@ -210,6 +235,120 @@ export async function createOrGetMentorSession(studentId: string, mentorId: stri
   }
 
   return data as MentorSessionRecord;
+}
+
+export async function bookMentorSlot(studentId: string, mentorId: string, slotLabel: string) {
+  const client = getSupabaseBrowserClient();
+
+  if (!client) {
+    throw new Error("Supabase is not configured.");
+  }
+
+  const { data: existing, error: existingError } = await client
+    .from("mentor_bookings")
+    .select(
+      "id, mentor_id, student_id, slot_label, status, created_at, student_profile:profiles!mentor_bookings_student_id_fkey(id, full_name, email, domain_interest, bio), mentor_profile:profiles!mentor_bookings_mentor_id_fkey(id, full_name, email, bio, tags)"
+    )
+    .eq("mentor_id", mentorId)
+    .eq("slot_label", slotLabel)
+    .maybeSingle();
+
+  if (existingError) {
+    throw existingError;
+  }
+
+  if (existing) {
+    const booking = normalizeBookingRow(existing as BookingJoinRow);
+
+    if (booking.student_id === studentId) {
+      return booking;
+    }
+
+    throw new Error("That session slot has already been booked.");
+  }
+
+  const { data, error } = await client
+    .from("mentor_bookings")
+    .insert({
+      mentor_id: mentorId,
+      student_id: studentId,
+      slot_label: slotLabel,
+      status: "booked",
+    })
+    .select(
+      "id, mentor_id, student_id, slot_label, status, created_at, student_profile:profiles!mentor_bookings_student_id_fkey(id, full_name, email, domain_interest, bio), mentor_profile:profiles!mentor_bookings_mentor_id_fkey(id, full_name, email, bio, tags)"
+    )
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return normalizeBookingRow(data as BookingJoinRow);
+}
+
+export async function fetchMentorBookingsForMentor(mentorId: string) {
+  const client = getSupabaseBrowserClient();
+
+  if (!client) {
+    return [];
+  }
+
+  const { data, error } = await client
+    .from("mentor_bookings")
+    .select(
+      "id, mentor_id, student_id, slot_label, status, created_at, student_profile:profiles!mentor_bookings_student_id_fkey(id, full_name, email, domain_interest, bio), mentor_profile:profiles!mentor_bookings_mentor_id_fkey(id, full_name, email, bio, tags)"
+    )
+    .eq("mentor_id", mentorId)
+    .order("slot_label", { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  return ((data ?? []) as BookingJoinRow[]).map(normalizeBookingRow);
+}
+
+export async function fetchMentorBookingsForStudent(studentId: string) {
+  const client = getSupabaseBrowserClient();
+
+  if (!client) {
+    return [];
+  }
+
+  const { data, error } = await client
+    .from("mentor_bookings")
+    .select(
+      "id, mentor_id, student_id, slot_label, status, created_at, student_profile:profiles!mentor_bookings_student_id_fkey(id, full_name, email, domain_interest, bio), mentor_profile:profiles!mentor_bookings_mentor_id_fkey(id, full_name, email, bio, tags)"
+    )
+    .eq("student_id", studentId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw error;
+  }
+
+  return ((data ?? []) as BookingJoinRow[]).map(normalizeBookingRow);
+}
+
+export async function fetchMentorBookingsByMentorIds(mentorIds: string[]) {
+  const client = getSupabaseBrowserClient();
+
+  if (!client || !mentorIds.length) {
+    return [];
+  }
+
+  const { data, error } = await client
+    .from("mentor_bookings")
+    .select("id, mentor_id, student_id, slot_label, status, created_at")
+    .in("mentor_id", mentorIds)
+    .eq("status", "booked");
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []) as Array<Pick<MentorBookingRecord, "id" | "mentor_id" | "student_id" | "slot_label" | "status" | "created_at">>;
 }
 
 export async function fetchUserSessions(userId: string, role: AppRole) {

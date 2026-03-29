@@ -143,6 +143,16 @@ create table if not exists public.messages (
   created_at timestamptz not null default timezone('utc', now())
 );
 
+create table if not exists public.mentor_bookings (
+  id uuid primary key default gen_random_uuid(),
+  mentor_id uuid not null references public.profiles(id) on delete cascade,
+  student_id uuid not null references public.profiles(id) on delete cascade,
+  slot_label text not null,
+  status text not null default 'booked',
+  created_at timestamptz not null default timezone('utc', now()),
+  unique (mentor_id, slot_label)
+);
+
 alter table public.messages
   add column if not exists session_id uuid references public.mentor_sessions(id) on delete cascade;
 alter table public.messages
@@ -150,6 +160,17 @@ alter table public.messages
 alter table public.messages
   add column if not exists body text;
 alter table public.messages
+  add column if not exists created_at timestamptz not null default timezone('utc', now());
+
+alter table public.mentor_bookings
+  add column if not exists mentor_id uuid references public.profiles(id) on delete cascade;
+alter table public.mentor_bookings
+  add column if not exists student_id uuid references public.profiles(id) on delete cascade;
+alter table public.mentor_bookings
+  add column if not exists slot_label text;
+alter table public.mentor_bookings
+  add column if not exists status text not null default 'booked';
+alter table public.mentor_bookings
   add column if not exists created_at timestamptz not null default timezone('utc', now());
 
 create or replace function public.set_updated_at()
@@ -398,6 +419,7 @@ alter table public.profiles enable row level security;
 alter table public.reflections enable row level security;
 alter table public.mentor_sessions enable row level security;
 alter table public.messages enable row level security;
+alter table public.mentor_bookings enable row level security;
 
 drop policy if exists "users can view own profile and active mentors" on public.profiles;
 create policy "users can view own profile and active mentors"
@@ -497,6 +519,27 @@ with check (
     from public.mentor_sessions
     where mentor_sessions.id = session_id
       and (mentor_sessions.student_id = auth.uid() or mentor_sessions.mentor_id = auth.uid())
+  )
+);
+
+drop policy if exists "participants view bookings" on public.mentor_bookings;
+create policy "participants view bookings"
+on public.mentor_bookings
+for select
+using (auth.uid() = student_id or auth.uid() = mentor_id);
+
+drop policy if exists "students book mentor slots" on public.mentor_bookings;
+create policy "students book mentor slots"
+on public.mentor_bookings
+for insert
+with check (
+  auth.uid() = student_id
+  and exists (
+    select 1
+    from public.profiles
+    where profiles.id = mentor_id
+      and profiles.role = 'mentor'
+      and profiles.is_active = true
   )
 );
 

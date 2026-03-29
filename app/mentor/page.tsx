@@ -4,12 +4,13 @@ import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/components/auth-provider";
 import { domains } from "@/lib/data";
-import { fetchStudentContext, fetchUserSessions, updateProfile } from "@/lib/supabase-data";
-import type { MentorSessionRecord, StudentContextSummary } from "@/lib/types";
+import { fetchMentorBookingsForMentor, fetchStudentContext, fetchUserSessions, updateProfile } from "@/lib/supabase-data";
+import type { MentorBookingRecord, MentorSessionRecord, StudentContextSummary } from "@/lib/types";
 
 export default function MentorDashboardPage() {
   const { isSupabaseEnabled, isLoading, profile, refreshProfile, user } = useAuth();
   const [sessions, setSessions] = useState<MentorSessionRecord[]>([]);
+  const [bookings, setBookings] = useState<MentorBookingRecord[]>([]);
   const [studentSnapshots, setStudentSnapshots] = useState<Record<string, StudentContextSummary>>({});
   const [status, setStatus] = useState("Loading mentor workspace...");
   const [mentorForm, setMentorForm] = useState({
@@ -36,6 +37,10 @@ export default function MentorDashboardPage() {
         setStatus(data.length ? "Open any session to continue the conversation." : "No student sessions yet.");
       })
       .catch((error: { message?: string }) => setStatus(error.message ?? "Could not load mentor sessions."));
+
+    void fetchMentorBookingsForMentor(user.id)
+      .then(setBookings)
+      .catch(() => undefined);
   }, [isSupabaseEnabled, profile?.role, user]);
 
   if (profile?.role === "mentor" && mentorFormUserId !== profile.id) {
@@ -180,6 +185,41 @@ export default function MentorDashboardPage() {
             {formMessage ? <p className="text-sm text-muted">{formMessage}</p> : null}
           </div>
         </form>
+      </section>
+
+      <section className="glass-panel rounded-[1.8rem] p-6 sm:p-8">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-muted">Booked Sessions</p>
+            <h2 className="mt-2 text-2xl font-semibold">Reserved mentor slots</h2>
+          </div>
+          <div className="rounded-full border border-border bg-white/75 px-4 py-2 text-sm text-muted">
+            {bookings.length} booked
+          </div>
+        </div>
+
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {bookings.length ? (
+            bookings.map((booking) => (
+              <div key={booking.id} className="rounded-[1.4rem] border border-border bg-white/75 p-4">
+                <p className="text-sm font-semibold text-accent">{booking.slot_label}</p>
+                <p className="mt-2 text-lg font-semibold">
+                  {booking.student_profile?.full_name || booking.student_profile?.email || "Student"}
+                </p>
+                <p className="mt-1 text-sm text-muted">
+                  {booking.student_profile?.email || "Student email unavailable"}
+                </p>
+                <p className="mt-3 text-sm text-muted">
+                  Status: <span className="font-medium text-foreground">{booking.status}</span>
+                </p>
+              </div>
+            ))
+          ) : (
+            <div className="rounded-[1.4rem] border border-border bg-white/75 p-4 text-sm text-muted sm:col-span-2 xl:col-span-3">
+              No booked sessions yet. Reserved student slots will appear here as soon as students confirm them.
+            </div>
+          )}
+        </div>
       </section>
 
       <section className="grid gap-5">

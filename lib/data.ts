@@ -2,6 +2,12 @@ import { activities as activityValues, domainNames, type DomainCard, type Mentor
 
 export const activities = [...activityValues];
 
+export const mentorSlots = [
+  "Mon, 6:00 PM",
+  "Thu, 7:30 PM",
+  "Sat, 11:30 AM",
+] as const;
+
 export const domains: DomainCard[] = [
   {
     slug: "data-science",

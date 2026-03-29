@@ -101,6 +101,17 @@ export interface ChatMessageRecord {
   created_at: string;
 }
 
+export interface MentorBookingRecord {
+  id: string;
+  mentor_id: string;
+  student_id: string;
+  slot_label: string;
+  status: string;
+  created_at: string;
+  student_profile?: Pick<AppProfile, "id" | "full_name" | "email" | "domain_interest" | "bio"> | null;
+  mentor_profile?: Pick<AppProfile, "id" | "full_name" | "email" | "bio" | "tags"> | null;
+}
+
 export interface StudentContextSummary {
   profile: Pick<AppProfile, "id" | "full_name" | "email" | "domain_interest" | "bio"> | null;
   exploredDomains: string[];
