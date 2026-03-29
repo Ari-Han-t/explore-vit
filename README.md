@@ -157,8 +157,8 @@ order by created_at desc;
 
 ## Deployment
 
-- Frontend: Vercel
-- Backend: Railway
+- Frontend: Vercel Link:https://explore-vit.vercel.app/
+- Backend: Render Link: https://explore-vit.onrender.com
 - Database/Auth/Realtime: Supabase
 
 Add the same environment variables in production and update Supabase redirect URLs to include your deployed frontend domain.
