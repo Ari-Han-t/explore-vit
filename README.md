@@ -156,7 +156,7 @@ order by created_at desc;
 
 ## Deployment
 
-- Frontend: your deployed frontend URL (set as `NEXT_PUBLIC_SITE_URL`)
+- Frontend: https://explore-vit.vercel.app/ (set as `NEXT_PUBLIC_SITE_URL`)
 - Backend: your deployed backend URL (set as `NEXT_PUBLIC_API_BASE_URL`)
 - Database/Auth/Realtime: Supabase
 
