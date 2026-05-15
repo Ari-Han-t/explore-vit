@@ -351,39 +351,20 @@ as $$
 declare
   email_address text := lower(event->'user'->>'email');
   provider_name text := lower(coalesce(event->'user'->'app_metadata'->>'provider', 'email'));
-  email_domain text := split_part(email_address, '@', 2);
-  is_student_domain_allowed boolean;
   is_mentor_allowed boolean;
 begin
   if email_address is null or email_address = '' then
     return jsonb_build_object(
-      'error', jsonb_build_object(
-        'message', 'Email is required.',
-        'http_code', 400
-      )
+      'error', jsonb_build_object('message', 'Email is required.', 'http_code', 400)
     );
   end if;
 
+  -- Google provider: allow any Google account (no domain restriction).
   if provider_name = 'google' then
-    select exists (
-      select 1
-      from public.allowed_student_email_domains
-      where lower(domain) = email_domain
-    ) into is_student_domain_allowed;
+    return '{}'::jsonb;
 
-    if is_student_domain_allowed then
-      return '{}'::jsonb;
-    end if;
-
-    return jsonb_build_object(
-      'error', jsonb_build_object(
-        'message', 'Only approved VIT student Google accounts can sign in.',
-        'http_code', 403
-      )
-    );
-  end if;
-
-  if provider_name = 'email' then
+  -- Email provider: only allow emails listed in allowed_mentor_emails (mentors)
+  elsif provider_name = 'email' then
     select exists (
       select 1
       from public.allowed_mentor_emails
@@ -393,22 +374,17 @@ begin
 
     if is_mentor_allowed then
       return '{}'::jsonb;
+    else
+      return jsonb_build_object(
+        'error', jsonb_build_object('message', 'This mentor email is not approved for access.', 'http_code', 403)
+      );
     end if;
 
+  else
     return jsonb_build_object(
-      'error', jsonb_build_object(
-        'message', 'This mentor email is not approved for access.',
-        'http_code', 403
-      )
+      'error', jsonb_build_object('message', 'Unsupported sign-in provider.', 'http_code', 403)
     );
   end if;
-
-  return jsonb_build_object(
-    'error', jsonb_build_object(
-      'message', 'Unsupported sign-in provider.',
-      'http_code', 403
-    )
-  );
 end;
 $$;
 

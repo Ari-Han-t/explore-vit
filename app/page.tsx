@@ -55,7 +55,7 @@ export default function Home() {
           <div className="grid gap-8 px-6 py-8 sm:px-8 lg:grid-cols-[1.2fr_0.8fr] lg:px-10">
             <div className="space-y-6">
               <div className="inline-flex rounded-full border border-border bg-white/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-accent">
-                Explore VIT
+                Explore
               </div>
               <div className="space-y-4">
                 <h1 className="max-w-3xl text-4xl font-semibold tracking-tight sm:text-5xl">
@@ -82,7 +82,7 @@ export default function Home() {
               <div className="mt-4 space-y-4">
                 <div className="rounded-2xl bg-white/80 p-4">
                   <p className="text-sm text-muted">Students</p>
-                  <p className="mt-1 text-lg font-semibold">VIT Google sign-in only</p>
+                  <p className="mt-1 text-lg font-semibold">Google sign-in</p>
                 </div>
                 <div className="rounded-2xl bg-white/80 p-4">
                   <p className="text-sm text-muted">Mentors</p>
@@ -185,7 +185,7 @@ export default function Home() {
         <div className="grid gap-8 px-6 py-8 sm:px-8 lg:grid-cols-[1.3fr_0.9fr] lg:px-10">
           <div className="space-y-6">
             <div className="inline-flex rounded-full border border-border bg-white/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-accent">
-              Explore VIT
+              Explore
             </div>
             <div className="space-y-4">
               <h1 className="max-w-3xl text-4xl font-semibold tracking-tight sm:text-5xl">

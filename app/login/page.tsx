@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
 
-const allowedStudentDomain = process.env.NEXT_PUBLIC_ALLOWED_STUDENT_DOMAIN ?? "vitstudent.ac.in";
+// No domain restriction: allow Google sign-in for any Google account.
 
 export default function LoginPage() {
   const router = useRouter();
@@ -51,14 +51,10 @@ export default function LoginPage() {
     <div className="grid gap-6 lg:grid-cols-2">
       <section className="glass-panel rounded-[1.8rem] p-6 sm:p-8">
         <p className="text-sm font-semibold uppercase tracking-[0.16em] text-muted">Student Access</p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight">Google OAuth for VIT students</h1>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight">Google sign-in for students</h1>
         <p className="mt-3 text-sm leading-7 text-muted">
-          Students sign in with their VIT Google account.
+          Students may sign in with a Google account.
         </p>
-        <div className="mt-6 rounded-3xl border border-border bg-white/75 p-5">
-          <p className="text-sm text-muted">Allowed student email domain</p>
-          <p className="mt-2 text-xl font-semibold">@{allowedStudentDomain}</p>
-        </div>
         <button
           type="button"
           disabled={!isSupabaseEnabled}
@@ -79,7 +75,7 @@ export default function LoginPage() {
         <form onSubmit={handleMentorLogin} className="mt-6 space-y-4">
           <input
             type="email"
-            placeholder="mentor@vit.ac.in"
+            placeholder="mentor@example.com"
             value={mentorEmail}
             onChange={(event) => setMentorEmail(event.target.value)}
             className="w-full rounded-2xl border border-border bg-white/75 px-4 py-3 outline-none"

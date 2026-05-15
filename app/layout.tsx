@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Explore VIT",
-  description: "A prototype platform for exploring domains, mentors, and career-fit signals at VIT.",
+  title: "Explore",
+  description: "A prototype platform for exploring domains, mentors, and career-fit signals.",
 };
 
 export default function RootLayout({

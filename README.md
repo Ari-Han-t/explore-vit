@@ -1,6 +1,6 @@
-# Explore VIT
+# Explore
 
-Explore VIT helps VIT students explore domains, connect with mentors, reflect on what they are learning, and get direction based on their activity.
+Explore helps students explore domains, connect with mentors, reflect on what they are learning, and get direction based on their activity.
 
 ## What It Includes
 
@@ -46,7 +46,6 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
-NEXT_PUBLIC_ALLOWED_STUDENT_DOMAIN=vitstudent.ac.in
 ```
 
 Optional legacy fallback:
@@ -109,11 +108,11 @@ In Supabase Dashboard:
 
 ### Student access rule
 
-Students must sign in with Google using an allowed VIT student domain from `public.allowed_student_email_domains`.
+Students may sign in using Google OAuth (no institution domain restriction by default).
 
 ### Mentor access rule
 
-Mentors sign up with email/password. Their email must exist in `public.allowed_mentor_emails`.
+Mentors sign up with email/password. Their email must exist in `public.allowed_mentor_emails` (or be added by an admin).
 
 ## Mentor Signup And Manual Enable
 
@@ -157,8 +156,8 @@ order by created_at desc;
 
 ## Deployment
 
-- Frontend: Vercel Link:https://explore-vit.vercel.app/
-- Backend: Render Link: https://explore-vit.onrender.com
+- Frontend: your deployed frontend URL (set as `NEXT_PUBLIC_SITE_URL`)
+- Backend: your deployed backend URL (set as `NEXT_PUBLIC_API_BASE_URL`)
 - Database/Auth/Realtime: Supabase
 
 Add the same environment variables in production and update Supabase redirect URLs to include your deployed frontend domain.

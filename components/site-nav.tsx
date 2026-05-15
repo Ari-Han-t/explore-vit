@@ -33,7 +33,7 @@ export function SiteNav() {
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <Link href="/" className="text-xl font-semibold tracking-tight">
-              Explore VIT
+              Explore
             </Link>
             <p className="text-sm text-muted">Career exploration, mentor access, and guided decision-making.</p>
           </div>
